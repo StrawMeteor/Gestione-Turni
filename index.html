@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Turni</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Turni">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#2b6cb0">
+<style>
+:root{--bg:#f6f5f1;--sf:#fff;--tx:#1d1d1b;--mt:#6b6a65;--bd:#ddd9cf;--ac:#2b6cb0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17181a;--sf:#222427;--tx:#ecebe6;--mt:#9c9a93;--bd:#3a3d41;--ac:#6aa7e8}}
+:root[data-theme="dark"]{--bg:#17181a;--sf:#222427;--tx:#ecebe6;--mt:#9c9a93;--bd:#3a3d41;--ac:#6aa7e8}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 16px}
+h1{font-size:20px;margin:0}h2{font-size:18px;margin:0}h3{font-size:15px;margin:14px 0 8px}
+main{display:grid;grid-template-columns:1fr 290px;gap:12px;padding:0 16px 24px;max-width:1100px;margin:auto}
+#tot,#sim{grid-column:1/-1}.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+@media(max-width:760px){main{grid-template-columns:1fr}}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:14px;min-width:0}
+button,input,select,textarea{font:inherit;color:var(--tx);background:var(--sf);border:1px solid var(--bd);border-radius:8px;padding:6px 10px}
+button{cursor:pointer}button.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.grid b{text-align:center;font-size:12px;color:var(--mt)}
+.day{min-height:62px;padding:4px;text-align:left;display:flex;flex-direction:column;gap:1px;overflow:hidden;font-size:12px}
+.day span{font-weight:600;font-size:13px}.day em{font-style:normal}.day u{text-decoration:none;font-weight:600}
+.day.sun span{color:#c0392b}.day.hol{outline:2px solid #c0392b;outline-offset:-2px}
+.lg{display:flex;align-items:center;gap:8px;width:100%;margin-bottom:6px;text-align:left}
+.lg i{width:16px;height:16px;border-radius:4px;flex:none;border:1px solid var(--bd)}.lg span{flex:1}.lg small{color:var(--mt)}
+.on{outline:3px solid var(--ac);outline-offset:1px}
+.hint{font-size:13px;color:var(--mt);margin-top:10px}.seg{display:flex;gap:6px;margin:0 0 6px}.seg button{flex:1;font-size:13px}dialog{max-height:90vh;overflow:auto}
+table{width:100%;border-collapse:collapse}.ov{overflow-x:auto}.tt th{font-size:12px;color:var(--mt);font-weight:600;text-align:left;padding:4px;border-bottom:2px solid var(--bd)}.tt th.r{text-align:right}.tt td.r{white-space:nowrap;font-variant-numeric:tabular-nums}.tt td:first-child{width:46%}@media(max-width:760px){.tt{font-size:14px}.tt td{padding:8px 4px}}td{padding:5px 4px;border-bottom:1px solid var(--bd)}.r{text-align:right}tr.t td{font-weight:700}
+.f2{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;align-items:end}
+label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--mt)}label input,label select{width:100%}
+dialog{border:1px solid var(--bd);border-radius:14px;background:var(--sf);color:var(--tx);max-width:640px;width:calc(100% - 24px);padding:16px}
+dialog::backdrop{background:#0008}
+.sr{display:flex;flex-wrap:wrap;gap:8px;align-items:end;padding:10px 0;border-bottom:1px solid var(--bd)}
+.sr input[type=color]{padding:0;width:42px;height:34px}.hex{width:130px}.sr .nm{flex:1;min-width:120px}
+.row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+textarea{width:100%;height:80px;font-family:monospace;font-size:12px}
+</style></head><body>
+<header><h1>Gestione Turni</h1><div><button onclick="openShifts()">Gestione turni</button> <button onclick="openSet()">Impostazioni</button></div></header>
+<main><section class="card" id="cal"></section><aside class="card" id="side"></aside><section class="card" id="tot"></section><section class="card" id="sim"></section></main>
+<dialog id="dlg"></dialog>
+<script>
+const $=s=>document.querySelector(s),D=$("#dlg"),K="turni_v1";
+const NM={d:"Diurno",n:"Notturno",ds:"Diurno domenicale",df:"Diurno festivo",ns:"Notturno domenicale",nf:"Notturno festivo",otd:"Straordinario diurno",otn:"Straordinario notturno",oth:"Straordinario festivo"};
+const MESI=["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+const ABN={rol:"ROL",fe:"Ferie",ma:"Malattia"},ABC={rol:"#90a4ae",fe:"#81c784",ma:"#e57373"};let half=0,cu={m:"h",h:4,a:"09:00",b:"13:00"};const abh=ab=>ab.h!=null?ab.h:ab.f*(S.dh||8);
+let S=null;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
+if(!S)S={rates:{d:4,n:46,ds:37,df:54,ns:79,nf:96,otd:25,otn:50,oth:50},nh:[22,6],nid:5,months:{},shifts:[
+{id:1,n:"Mattina",s:"06:00",e:"14:00",ps:"10:00",pe:"10:30",c:"#f0b429"},
+{id:2,n:"Pomeriggio",s:"14:00",e:"22:00",ps:"18:00",pe:"18:30",c:"#4a90d9"},
+{id:3,n:"Notte",s:"22:00",e:"06:00",ps:"02:00",pe:"02:30",c:"#7e57c2"},
+{id:4,n:"Giornata",s:"08:00",e:"17:00",ps:"12:00",pe:"13:00",c:"#43a047",g:true,gp:18}]};
+if(!("ds" in S.rates)){S.rates={d:4,n:46,ds:37,df:54,ns:79,nf:96,otd:S.rates.otd||25,otn:S.rates.otn||50,oth:S.rates.oth||50};if(!S.shifts.some(x=>x.g))S.shifts.push({id:S.nid++,n:"Giornata",s:"08:00",e:"17:00",ps:"12:00",pe:"13:00",c:"#43a047",g:true,gp:18})}
+S.rates.rol=S.rates.rol??0;S.rates.fe=S.rates.fe??18;S.rates.ma=S.rates.ma??18;
+if(!S.ot)S.ot={w:40,b1:44,b2:48,otd:[10,25,35],otn:[50,60,75],oth:[50,70,70]};
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
+const E=n=>new Intl.NumberFormat("it-IT",{style:"currency",currency:"EUR"}).format(n||0);
+const H=m=>(m).toFixed(2).replace(".",","),p2=n=>String(n).padStart(2,"0");
+const dk=d=>d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate());
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+const ink=c=>{const n=parseInt(c.slice(1),16);return((n>>16)*299+(n>>8&255)*587+(n&255)*114)/1000>150?"#111":"#fff"};
+function parseCol(v){v=v.trim();let m=v.match(/^rgb\(?\s*(\d+)[ ,]+(\d+)[ ,]+(\d+)\s*\)?$/i);if(m)return"#"+[1,2,3].map(i=>(+m[i]&255).toString(16).padStart(2,"0")).join("");m=v.match(/^#?([0-9a-f]{6})$/i);if(m)return"#"+m[1].toLowerCase();m=v.match(/^#?([0-9a-f]{3})$/i);return m?"#"+[...m[1]].map(x=>x+x).join("").toLowerCase():null}
+const now=new Date();let cur={y:now.getFullYear(),m:now.getMonth()},tool=null;
+const ym=()=>cur.y+"-"+p2(cur.m+1);
+const M=k=>S.months[k]||(S.months[k]={days:{},hr:"",tr:20,rh:"",rl:"",rb:"",rn:""});
+function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),t=h+l-7*m+114;return new Date(y,Math.floor(t/31)-1,t%31+1)}
+const FIX=["01-01","01-06","04-25","05-01","06-02","08-15","11-01","12-08","12-25","12-26"];
+function autoHol(d){const k=dk(d);if(FIX.includes(k.slice(5)))return true;const e=easter(d.getFullYear());e.setDate(e.getDate()+1);return dk(e)===k}
+function dayInfo(d){const mo=S.months[d.getFullYear()+"-"+p2(d.getMonth()+1)],o=mo&&mo.days[dk(d)];return{sun:d.getDay()===0,hol:autoHol(d)||!!(o&&o.hol)}}
+const tm=t=>{const a=t.split(":");return+a[0]*60+ +a[1]};
+function shiftCalc(sh,d){const d1=new Date(d);d1.setDate(d.getDate()+1);const I=[dayInfo(d),dayInfo(d1)];
+let s=tm(sh.s),e=tm(sh.e),ps=sh.ps?tm(sh.ps):-1,pe=sh.pe?tm(sh.pe):-1;if(e<=s)e+=1440;
+if(ps>=0&&pe>=0){if(ps<s)ps+=1440;if(pe<=ps)pe+=1440}else ps=pe=-1;
+const r={min:0,d:0,n:0,ds:0,df:0,ns:0,nf:0,g:0,gw:0};
+for(let t=s;t<e;t++){if(ps>=0&&t>=ps&&t<pe)continue;r.min++;if(sh.g){r.g++;continue}const c=t%1440,ni=c<S.nh[1]*60||c>=S.nh[0]*60,di=I[t>=1440?1:0];r[(ni?"n":"d")+(di.hol?"f":di.sun?"s":"")]++}
+r.gw=r.g*(+sh.gp||0);
+for(const k in r)r[k]/=60;return r}
+function calc(key){const m=M(key),a=key.split("-"),y=+a[0],mo=+a[1],n=new Date(y,mo,0).getDate(),O=S.ot,P=S.rates,dh=S.dh||8,ws={};
+const R={min:0,d:0,n:0,ds:0,df:0,ns:0,nf:0,g:0,gw:0,dl:0,rol:0,fe:0,ma:0,ot:{otd:0,otn:0,oth:0},otw:{otd:0,otn:0,oth:0}};
+const mon=d=>{const x=new Date(d);x.setDate(x.getDate()-(x.getDay()+6)%7);return x};
+const info=d=>{const q=S.months[d.getFullYear()+"-"+p2(d.getMonth()+1)];return q&&q.days[dk(d)]};
+const wh=w0=>{let h=0;for(let i=0;i<7;i++){const d=new Date(w0);d.setDate(d.getDate()+i);const o=info(d),sh=o&&S.shifts.find(x=>x.id===o.s);if(sh)h+=shiftCalc(sh,d).min}return h};
+const seg=(s,h,k)=>{const T=[O.w,O.b1,O.b2,1e9],r=[{otd:P.d,otn:P.n,oth:P.df}[k]].concat(O[k]);let w=0;for(let j=0;j<4;j++)w+=Math.max(0,Math.min(s+h,T[j])-Math.max(s,j?T[j-1]:-1))*(1+r[j]/100);return w};
+for(let i=1;i<=n;i++){const d=new Date(y,mo-1,i),o=m.days[dk(d)];if(!o)continue;
+const sh=S.shifts.find(x=>x.id===o.s);if(sh){const r=shiftCalc(sh,d);R.dl++;for(const k in r)R[k]+=r[k]}
+if(o.ab)R[o.ab.k]+=abh(o.ab);if((o.ot||[]).length)ws[dk(mon(d))]=mon(d)}
+Object.values(ws).forEach(w0=>{let run=wh(w0);for(let i=0;i<7;i++){const d=new Date(w0);d.setDate(d.getDate()+i);const o=info(d);(o&&o.ot||[]).forEach(x=>{if(d.getMonth()===mo-1&&d.getFullYear()===y){R.ot[x.k]+=x.h;R.otw[x.k]+=seg(run,x.h,x.k)}run+=x.h})}});
+return{R}}
+function render(){renderCal();renderSide();renderTot();renderSim()}
+function mv(n){cur.m+=n;if(cur.m<0){cur.m=11;cur.y--}if(cur.m>11){cur.m=0;cur.y++}render()}
+function renderCal(){const{y,m}=cur,mo=M(ym()),off=(new Date(y,m,1).getDay()+6)%7,n=new Date(y,m+1,0).getDate();
+let h=`<div class="nav"><button onclick="mv(-1)">‹</button><h2>${MESI[m]} ${y}</h2><button onclick="mv(1)">›</button></div><div class="grid">`+["Lun","Mar","Mer","Gio","Ven","Sab","Dom"].map(x=>`<b>${x}</b>`).join("");
+for(let i=0;i<off;i++)h+="<i></i>";
+for(let d=1;d<=n;d++){const dt=new Date(y,m,d),k=dk(dt),o=mo.days[k]||{},sh=S.shifts.find(x=>x.id===o.s),inf=dayInfo(dt),ot=(o.ot||[]).reduce((a,x)=>a+x.h,0);
+h+=`<button class="day${inf.hol?" hol":""}${inf.sun?" sun":""}"${sh||o.ab?` style="background:${sh?sh.c:ABC[o.ab.k]};color:${ink(sh?sh.c:ABC[o.ab.k])}"`:""} onclick="clickDay('${k}')"><span>${d}</span>${sh?`<em>${esc(sh.n)}</em>`:""}${o.ab?`<u>${ABN[o.ab.k]}${o.ab.h!=null?" "+H(o.ab.h)+"h":o.ab.f<1?" ½":""}</u>`:""}${ot?`<u>+${H(ot)}h str.</u>`:""}</button>`}
+$("#cal").innerHTML=h+"</div>"}
+function renderSide(){const on=(t,id)=>tool&&tool.t===t&&tool.id===id?" on":"";
+$("#side").innerHTML=`<h3 style="margin-top:0">Legenda turni</h3>`+S.shifts.map(s=>`<button class="lg${on("s",s.id)}" onclick="setTool('s',${s.id})"><i style="background:${s.c}"></i><span>${esc(s.n)}</span><small>${s.s}–${s.e}</small></button>`).join("")+
+`<h3>Assenze</h3>`+["rol","fe","ma"].map(k=>`<button class="lg${on("ab",k)}" onclick="setTool('ab','${k}')"><i style="background:${ABC[k]}"></i><span>${ABN[k]}</span><small>${S.rates[k]?"+"+S.rates[k]+"%":""}</small></button>`).join("")+`<div class="seg"><button class="${half?"":"on"}" onclick="half=0;renderSide()">Intera</button><button class="${half?"on":""}" onclick="half=1;renderSide()">Custom</button></div>${half?`<div class="seg"><button class="${cu.m=="h"?"on":""}" onclick="cu.m='h';renderSide()">Ore</button><button class="${cu.m=="h"?"":"on"}" onclick="cu.m='r';renderSide()">Fascia oraria</button></div>${cu.m=="h"?`<input type="number" min="0" step="0.25" value="${cu.h}" onchange="cu.h=+this.value||0" style="width:100%" aria-label="Ore di assenza">`:`<div class="seg"><input type="time" value="${cu.a}" onchange="cu.a=this.value" style="flex:1;min-width:0"><input type="time" value="${cu.b}" onchange="cu.b=this.value" style="flex:1;min-width:0"></div>`}`:""}<h3>Strumenti</h3><button class="lg${on("ot")}" onclick="setTool('ot')"><span>+ Straordinari</span></button><button class="lg${on("hol")}" onclick="setTool('hol')"><span>Segna/togli festivo</span></button><button class="lg${on("er")}" onclick="setTool('er')"><span>Gomma (svuota giorno)</span></button>
+<p class="hint">${tool?"Strumento attivo: clicca i giorni del calendario. Clicca di nuovo lo strumento per disattivarlo.":"Scegli un turno o uno strumento, poi clicca i giorni."} I festivi nazionali sono segnati in automatico (bordo rosso).</p>`}
+function setTool(t,id){tool=tool&&tool.t===t&&tool.id===id?null:{t,id};renderSide()}
+function clickDay(k){if(!tool)return;const mo=M(k.slice(0,7)),o=mo.days[k]||(mo.days[k]={});
+if(tool.t==="s")o.s=o.s===tool.id?undefined:tool.id;
+else if(tool.t==="hol")o.hol=!o.hol;
+else if(tool.t==="ab"){let h=null;if(half){h=cu.m=="h"?+cu.h:((tm(cu.b)-tm(cu.a)+1440)%1440)/60;if(!(h>0))return}
+if(o.ab&&o.ab.k===tool.id&&(half?o.ab.h===h:o.ab.h==null))delete o.ab;else o.ab=half?{k:tool.id,f:0,h}:{k:tool.id,f:1}}
+else if(tool.t==="er")delete mo.days[k];
+else if(tool.t==="ot"){askOT(k);return}
+save();render()}
+function askOT(k){const o=M(k.slice(0,7)).days[k],n=S.nh;
+dlg(`<h3 style="margin-top:0">Straordinari – ${k.split("-").reverse().join("/")}</h3><div class="f2"><label>Ore<input id="oh" type="number" step="0.25" min="0" value="1"></label><label>Fascia<select id="ok"><option value="otd">Diurno (${n[1]}–${n[0]})</option><option value="otn">Notturno (${n[0]}–${n[1]})</option><option value="oth"${(di=>di.sun||di.hol?" selected":"")(dayInfo(new Date(k+"T00:00:00")))}>Festivo</option></select></label></div>`+
+((o.ot||[]).length?`<h3>Già inseriti</h3>`+o.ot.map((x,i)=>`<div class="sr">${H(x.h)} h – ${NM[x.k]} <button onclick="delOT('${k}',${i})">Elimina</button></div>`).join(""):"")+
+`<div class="row"><button onclick="D.close()">Chiudi</button><button class="pri" onclick="saveOT('${k}')">Aggiungi</button></div>`)}
+function saveOT(k){const h=parseFloat($("#oh").value);if(!(h>0))return;const o=M(k.slice(0,7)).days[k];(o.ot=o.ot||[]).push({h,k:$("#ok").value});save();D.close();render()}
+function delOT(k,i){M(k.slice(0,7)).days[k].ot.splice(i,1);save();render();askOT(k)}
+function dlg(h){D.innerHTML=h;if(!D.open)D.showModal()}
+function openShifts(){dlg(`<h3 style="margin-top:0">Gestione turni</h3>`+S.shifts.map(s=>{const f=(k,t)=>`onchange="upd(${s.id},'${k}',this.value)"`;
+return`<div class="sr"><label class="nm">Nome<input value="${esc(s.n)}" ${f("n")}></label><label>Inizio<input type="time" value="${s.s}" ${f("s")}></label><label>Fine<input type="time" value="${s.e}" ${f("e")}></label><label>Pausa da<input type="time" value="${s.ps||""}" ${f("ps")}></label><label>Pausa a<input type="time" value="${s.pe||""}" ${f("pe")}></label>
+<label>Colore<span style="display:flex;gap:6px"><input type="color" value="${s.c}" onchange="upc(${s.id},this.value)"><input class="hex" value="${s.c}" onchange="upc(${s.id},this.value)" placeholder="#hex o rgb(r,g,b)"></span></label>
+<label>A giornata<input type="checkbox" ${s.g?"checked":""} onchange="upd(${s.id},'g',this.checked)" style="width:22px;height:22px"></label>${s.g?`<label>Magg. %<input type="number" step="0.5" style="width:80px" value="${s.gp||0}" onchange="upd(${s.id},'gp',+this.value)"></label>`:""}<span style="color:var(--mt);font-size:13px">${H(shiftCalc(s,new Date(2026,0,7)).min)} h retribuite</span><button onclick="delShift(${s.id})">Elimina</button></div>`}).join("")+
+`<p class="hint">Pausa non retribuita: le ore di pausa vengono sottratte. Lascia vuoti i campi pausa se non c’è.</p><div class="row"><button onclick="addShift()">+ Nuovo turno</button><button class="pri" onclick="D.close()">Fine</button></div>`)}
+function upd(id,k,v){S.shifts.find(x=>x.id===id)[k]=v;save();render();openShifts()}
+function upc(id,v){const c=parseCol(v);if(c){S.shifts.find(x=>x.id===id).c=c;save();render()}openShifts()}
+function addShift(){S.shifts.push({id:S.nid++,n:"Nuovo turno",s:"08:00",e:"16:00",ps:"",pe:"",c:"#26a69a"});save();render();openShifts()}
+function delShift(id){S.shifts=S.shifts.filter(x=>x.id!==id);if(tool&&tool.id===id)tool=null;save();render();openShifts()}
+function openSet(){const O=S.ot,pi=(k,l)=>`<label>${l} (%)<input type="number" step="0.5" value="${S.rates[k]}" onchange="S.rates.${k}=+this.value||0;save();render()"></label>`,
+po=(k,l)=>[`ore ${O.w+1}–${O.b1}`,`ore ${O.b1+1}–${O.b2}`,`oltre la ${O.b2}ª ora`].map((t,j)=>`<label>${l}: ${t} (%)<input type="number" step="0.5" value="${O[k][j]}" onchange="S.ot.${k}[${j}]=+this.value||0;save();render()"></label>`).join(""),
+pn=(k,l)=>`<label>${l}<input type="number" min="1" value="${O[k]}" onchange="S.ot.${k}=+this.value||${O[k]};save();render();openSet()"></label>`;
+dlg(`<h3 style="margin-top:0">Impostazioni – maggiorazioni</h3><div class="f2">`+CAT.map(a=>pi(a[0],a[1])).join("")+["rol","fe","ma"].map(k=>pi(k,ABN[k])).join("")+
+`</div><h3>Straordinari settimanali (a scaglioni)</h3><div class="f2">${pn("w","Ore settimanali contrattuali")}${pn("b1","Fine 1° scaglione (ora)")}${pn("b2","Fine 2° scaglione (ora)")}</div><div class="f2" style="margin-top:10px">`+OTC.map(a=>po(a[0],a[1].replace("Straordinario ","Str. "))).join("")+
+`</div><h3>Altro</h3><div class="f2"><label>Notte da (ora)<input type="number" min="0" max="23" value="${S.nh[0]}" onchange="S.nh[0]=+this.value;save();render()"></label><label>Notte fino a (ora)<input type="number" min="0" max="23" value="${S.nh[1]}" onchange="S.nh[1]=+this.value;save();render()"></label><label>Ore per giornata (equivalente giorni e assenza intera)<input type="number" step="0.5" min="1" value="${S.dh||8}" onchange="S.dh=+this.value||8;save();render()"></label></div>
+<p class="hint">Ogni ora ricade in una sola categoria (diurno/notturno × feriale, domenicale, festivo) e prende la sua percentuale, senza somme. Il festivo prevale sulla domenica. Gli straordinari sono a scaglioni sulle ore della settimana (lun–dom): prima contano le ore dei turni, poi gli straordinari in ordine di data; ferie, malattia e ROL non contano. Le ore sotto la soglia contrattuale sono pagate come ore normali con la maggiorazione di categoria.</p>
+<h3>Backup dati</h3><textarea id="bk">${esc(JSON.stringify(S))}</textarea><div class="row"><button onclick="impBk()">Importa dal testo</button><button class="pri" onclick="D.close()">Chiudi</button></div>`)}
+function impBk(){try{const x=JSON.parse($("#bk").value);if(!x.shifts||!x.rates)throw 0;S=x;save();render();D.close()}catch(e){alert("Backup non valido")}}
+function sv(f,v){M(ym())[f]=v===""?"":+v;save();render()}
+const CAT=[["d","Diurno"],["n","Notturno"],["ds","Diurno domenicale"],["df","Diurno festivo"],["ns","Notturno domenicale"],["nf","Notturno festivo"]],OTC=[["otd","Straordinario diurno"],["otn","Straordinario notturno"],["oth","Straordinario festivo"]];
+function eqH(R){const P=S.rates;let h=R.min+R.gw/100+R.rol*(1+P.rol/100)+R.fe*(1+P.fe/100)+R.ma*(1+P.ma/100);CAT.forEach(a=>h+=R[a[0]]*P[a[0]]/100);OTC.forEach(a=>h+=R.otw[a[0]]);return h}
+function cp(){const p=new Date(cur.y,cur.m-1,1),a=M(p.getFullYear()+"-"+p2(p.getMonth()+1)),m=M(ym());["hn","hl","tp","md"].forEach(k=>m[k]=a[k]??"");save();render()}
+function setMd(v){M(ym()).md=v;save();render()}
+function useCalc(g,n,t){const m=M(ym());m.hl=g;m.hn=n;m.tp=t;save();render()}
+const rw=(a,b,c,t)=>`<tr${t?' class="t"':""}><td>${a}</td><td class="r">${b}</td><td class="r">${c}</td></tr>`;
+function renderTot(){const R=calc(ym()).R,P=S.rates,ot=R.ot,dh=S.dh||8,oh=ot.otd+ot.otn+ot.oth,ab=R.rol+R.fe+R.ma,
+rt=(a,h,m,t)=>`<tr${t?' class="t"':""}><td>${a}</td><td class="r">${H(h)}</td><td class="r">${H(h/dh)}</td><td class="r">${m||""}</td></tr>`,
+pc=k=>ot[k]?"+"+Math.round((R.otw[k]/ot[k]-1)*1000)/10+"%":"";
+$("#tot").innerHTML=`<h3 style="margin-top:0">Totale ore – ${MESI[cur.m]} ${cur.y}</h3><div class="ov"><table class="tt"><thead><tr><th>Categoria</th><th class="r">Ore</th><th class="r">Giorni</th><th class="r">Magg.</th></tr></thead><tbody><tr><td>Giorni con turno</td><td class="r">–</td><td class="r">${R.dl}</td><td></td></tr>`+
+rt("Ore ordinarie",R.min)+CAT.map(a=>rt("– "+a[1],R[a[0]],"+"+P[a[0]]+"%")).join("")+rt("– Turni a giornata",R.g,R.g?"+"+(Math.round(R.gw/R.g*10)/10)+"%":"")+
+OTC.map(a=>rt(a[1],ot[a[0]],pc(a[0]))).join("")+["rol","fe","ma"].map(k=>rt(ABN[k],R[k],P[k]?"+"+P[k]+"%":"")).join("")+
+rt("Totale ore lavorate",R.min+oh,"",1)+rt("Totale ore retribuite",R.min+oh+ab,"",1)+rt("Ore equivalenti",eqH(R),"",1)+`</tbody></table></div><p class="hint">Giorni = ore ÷ ${H(dh)} (ore per giornata, modificabili in Impostazioni). Gli straordinari mostrano la maggiorazione media a scaglioni.</p>`}
+function renderSim(){const key=ym(),m=M(key),R=calc(key).R,P=S.rates,ot=R.ot,eq=eqH(R),rl=+m.rl||0,rn=+m.rn||0,lg=m.md==="l",ph=lg?+m.hl||0:+m.hn||0,tp=+m.tp||0,ok=rl>0&&rn>0&&eq>0,hg=ok?rl/eq:0,hnet=ok?rn/eq:0,tr=ok?100*(1-rn/rl):0;
+const inp=(f,l)=>`<label>${l}<input type="number" step="0.01" min="0" value="${m[f]??""}" onchange="sv('${f}',this.value)"></label>`;
+const L=[["Ore ordinarie",R.min,R.min*ph]].concat(CAT.map(a=>[`${a[1]} (+${P[a[0]]}%)`,R[a[0]],R[a[0]]*ph*P[a[0]]/100]),[["Turni a giornata (magg. del turno)",R.g,R.gw*ph/100]],
+["rol","fe","ma"].map(k=>[ABN[k]+(P[k]?` (+${P[k]}%)`:""),R[k],R[k]*ph*(1+P[k]/100)]),OTC.map(a=>[`${a[1]} (a scaglioni)`,ot[a[0]],R.otw[a[0]]*ph])),tot=L.reduce((a,x)=>a+x[2],0),wh=H(R.min+R.rol+R.fe+R.ma+ot.otd+ot.otn+ot.oth)+" h";
+$("#sim").innerHTML=`<h3 style="margin-top:0">Simulatore stipendi – ${MESI[cur.m]} ${cur.y}</h3><div class="two"><div><h3 style="margin-top:0">1. Dalla busta paga alla paga oraria</h3><div class="f2">${inp("rl","Stipendio lordo in busta (€)")}${inp("rn","Stipendio netto in busta (€)")}</div>`+
+(ok?`<table style="margin-top:10px">${rw("Trattenute","",tr.toFixed(1).replace(".",",")+"%")}${rw("Ore equivalenti del mese",H(eq)+" h","")}${rw("Paga oraria netta","",E(hnet)+"/h",1)}${rw("Paga oraria lorda","",E(hg)+"/h",1)}</table><div class="row"><button onclick="useCalc(${hg.toFixed(2)},${hnet.toFixed(2)},${tr.toFixed(1)})">Usa questi valori nella simulazione →</button></div>`:`<p class="hint">Inserisci lordo e netto della busta e compila i turni del mese: ricavo trattenute, ore equivalenti e paga oraria netta e lorda.</p>`)+
+`</div><div><h3 style="margin-top:0">2. Dalla paga oraria alla busta paga</h3><div class="seg"><button class="${lg?"":"on"}" onclick="setMd('n')">Paga oraria netta</button><button class="${lg?"on":""}" onclick="setMd('l')">Paga oraria lorda</button></div><div class="f2">`+(lg?inp("hl","Paga oraria lorda (€/h)")+inp("tp","Trattenute (%)"):inp("hn","Paga oraria netta (€/h)"))+`<button onclick="cp()">Copia dal mese precedente</button></div>`+
+(ph>0?`<table style="margin-top:10px">${L.map(x=>rw(x[0],H(x[1])+" h",E(x[2]))).join("")}${lg?rw("Stipendio lordo stimato",wh,E(tot),1)+rw(`Trattenute (${H(tp).replace(",00","")}%)`,"",E(-tot*tp/100))+rw("Stipendio netto stimato","",E(tot*(1-tp/100)),1):rw("Busta paga netta stimata",wh,E(tot),1)}</table>${lg&&!tp?`<p class="hint">Inserisci la percentuale di trattenute per ottenere anche il netto.</p>`:""}`:`<p class="hint">Scegli se partire dalla paga oraria netta o lorda e inseriscila: simulo la busta paga del mese con ore, maggiorazioni, assenze e straordinari.</p>`)+
+`</div></div><p class="hint">La paga oraria è calcolata sulle ore equivalenti del mese (ore ordinarie + maggiorazioni + assenze + straordinari), quindi dipende dai turni nel calendario.</p>`}
+render();
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(function(){});
+</script></body></html>
